@@ -9093,6 +9093,7 @@ function bsrStartGame() {
 
 function bsrNewRound() {
   const s = bsrState;
+  s.animating = false; // always safe to reset at round start
   // Load shells: 2-8 shells, at least 1 live and 1 blank
   const totalShells = Math.floor(Math.random() * 5) + 3; // 3-7
   const liveCount = Math.max(1, Math.floor(Math.random() * (totalShells - 1)) + 1);
@@ -9250,7 +9251,7 @@ function bsrUseItem(index) {
         s.playerHP -= 1;
         bsrLog('🍬 Rotten Gummy backfired! -1 HP (' + s.playerHP + ' HP)');
         bsrSetStatus('Food poisoning! -1 HP');
-        if (s.playerHP <= 0) { setTimeout(() => bsrEndGame(false), 800); return; }
+        if (s.playerHP <= 0) { bsrRender(); setTimeout(() => bsrEndGame(false), 800); return; }
       }
       break;
     case 'saw':
@@ -9354,7 +9355,15 @@ function bsrShoot(target) {
         bsrLog('🔗 Dealer is handcuffed! Skip turn. (' + s.handcuffs + ' remaining)');
         bsrSetStatus('Dealer handcuffed! Skipping...');
         s.turn = 'player';
-        setTimeout(() => bsrRender(), 800);
+        // Also check if player is handcuffed (both could be cuffed simultaneously)
+        if (s.playerHandcuffed > 0) {
+          s.playerHandcuffed--;
+          bsrLog('🔗 You are also handcuffed! Skip turn. (' + s.playerHandcuffed + ' remaining)');
+          s.turn = 'dealer';
+          setTimeout(() => bsrDealerTurn(), 1200);
+        } else {
+          setTimeout(() => bsrRender(), 800);
+        }
       } else {
         setTimeout(() => bsrDealerTurn(), 1200);
       }
@@ -9477,9 +9486,9 @@ function bsrDealerShoot() {
   } else if (s._dealerKnowsCurrent === 'live') {
     target = 'player';
   } else {
-    // Unknown: consider odds
-    const remaining = s.shells.slice(s.shellIndex - 1);
-    const liveRatio = remaining.filter(x => x === 'live').length / remaining.length;
+    // Unknown: consider odds for shells AFTER the current one (already consumed)
+    const remaining = s.shells.slice(s.shellIndex);
+    const liveRatio = remaining.length > 0 ? remaining.filter(x => x === 'live').length / remaining.length : 0.5;
     if (liveRatio < 0.35) {
       target = 'self'; // likely blank
     } else {
@@ -9542,7 +9551,16 @@ function bsrDealerShoot() {
     bsrRender();
 
     if (s.turn === 'dealer') {
-      setTimeout(() => bsrDealerTurn(), 1200);
+      // Check handcuffs even on dealer's extra turn (shoot-self blank)
+      if (s.handcuffs > 0) {
+        s.handcuffs--;
+        bsrLog('🔗 Dealer is handcuffed! Skip turn. (' + s.handcuffs + ' remaining)');
+        bsrSetStatus('Dealer handcuffed! Skipping...');
+        s.turn = 'player';
+        bsrRender();
+      } else {
+        setTimeout(() => bsrDealerTurn(), 1200);
+      }
     } else if (s.turn === 'player') {
       // Check if player is handcuffed by dealer
       if (s.playerHandcuffed > 0) {
