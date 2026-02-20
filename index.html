@@ -3935,7 +3935,7 @@ let gameStats = {
 let dailyBonusData = { lastClaimed: 0, streak: 0 };
 
 // Global max bet to prevent runaway compounding (client-side safety net)
-const MAX_BET = 1000000; // $1M max bet across all games
+const MAX_BET = 100000000000; // $1M max bet across all games
 function checkMaxBet(bet, game) {
   if (bet > MAX_BET) { showToast('Max bet is $' + MAX_BET.toLocaleString() + ' for ' + game, false); return false; }
   return true;
