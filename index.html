@@ -6439,7 +6439,7 @@ function startCrash(){
   crashBetAmount=bet;balance-=bet;updateBalDisplay();
   crashCashedOut=false;crashRunning=true;
   window._crashCashoutReady=false; // prevent instant cashout
-  setTimeout(()=>{window._crashCashoutReady=true;},1250); // 1.25s min before cashout
+  setTimeout(()=>{window._crashCashoutReady=true;},100); // 1.25s min before cashout
   crashMultVal=1;crashHistory=[{t:0,m:1}];
   // House edge ~8% — clamp random to avoid division by zero
   let rnd = Math.random();
