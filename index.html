@@ -7030,12 +7030,16 @@ function drawCrashGraph(){
 
 function startCrash(){
   if(crashRunning)return;
+  // Slight 500ms cooldown between crash games
+  if(Date.now() - (window._lastCrashEnd||0) < 500){showToast('Cooldown! Wait...',false);return;}
   const bet=parseFloat(document.getElementById('crashBet').value)||10;
   if(bet<=0)return;
   if(!checkMaxBet(bet,'Crash'))return;
   if(bet>balance){showToast('Not enough balance!',false);return;}
   crashBetAmount=bet;balance-=bet;updateBalDisplay();
   crashCashedOut=false;crashRunning=true;
+  window._crashCashoutReady=false; // prevent instant cashout
+  setTimeout(()=>{window._crashCashoutReady=true;},200); // 200ms min before cashout
   crashMultVal=1;crashHistory=[{t:0,m:1}];
   // House edge ~8% — clamp random to avoid division by zero
   let rnd = Math.random();
@@ -7092,6 +7096,7 @@ function animateCrash(){
 
 function cashOut(){
   if(!crashRunning||crashCashedOut)return;
+  if(!window._crashCashoutReady){showToast('Wait...',false);return;}
   crashCashedOut=true;
   const winnings=crashBetAmount*crashMultVal;
   balance+=winnings;updateBalDisplay();
